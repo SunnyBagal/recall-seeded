@@ -122,6 +122,17 @@ app.post("/api/v1/content", authMiddleware, async (req, res) => {
       return res.status(400).json({ message: "Link is required" });
     }
 
+    // Saving a link that's already in the user's Recall returns the existing
+    // card instead of fetching and processing the page a second time.
+    const [existing] = await db
+      .select({ id: contents.id })
+      .from(contents)
+      .where(and(eq(contents.userId, req.userId!), eq(contents.link, link)))
+      .limit(1);
+    if (existing) {
+      return res.status(200).json({ message: "Already saved", contentId: existing.id });
+    }
+
     const detection = detectLinkType(link);
     
     const metadata = await fetchMetadata(link, detection.type);
