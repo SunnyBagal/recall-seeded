@@ -19,14 +19,19 @@ async function extractYouTubeTranscript(videoId: string): Promise<string | null>
   }
 }
 
-async function extractGitHubReadme(owner: string, repo: string): Promise<string | null> {
+async function extractGitHubReadme(
+  owner: string,
+  repo: string,
+  signal: AbortSignal
+): Promise<string | null> {
   const filenames = ["README.md", "readme.md", "README.rst", "README"];
 
   for (const filename of filenames) {
+    if (signal.aborted) return null;
     try {
       const url = `https://raw.githubusercontent.com/${owner}/${repo}/HEAD/${filename}`;
       const res = await fetch(url, {
-        signal: AbortSignal.timeout(5000),
+        signal: AbortSignal.any([signal, AbortSignal.timeout(5000)]),
       });
 
       if (res.ok) {
@@ -40,15 +45,19 @@ async function extractGitHubReadme(owner: string, repo: string): Promise<string 
   return null;
 }
 
+// `signal` lets the caller cancel in-flight fetches (e.g. on worker
+// shutdown) instead of waiting for every per-request timeout to expire.
 export async function extractText(
   type: DetectedType,
   link: string,
   existingText: string | null,
-  embedData: { videoId?: string; owner?: string; repo?: string }
+  embedData: { videoId?: string; owner?: string; repo?: string },
+  signal: AbortSignal
 ): Promise<TextExtractionResult> {
   if (existingText && existingText.length > 100) {
     return { text: existingText };
   }
+  if (signal.aborted) return { text: existingText };
 
   switch (type) {
     case "youtube": {
@@ -59,7 +68,7 @@ export async function extractText(
 
     case "github": {
       if (!embedData.owner || !embedData.repo) return { text: null };
-      const readme = await extractGitHubReadme(embedData.owner, embedData.repo);
+      const readme = await extractGitHubReadme(embedData.owner, embedData.repo, signal);
       return { text: readme };
     }
 
