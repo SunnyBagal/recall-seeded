@@ -7,11 +7,14 @@ export interface AISummaryResult {
   tags: string[];
 }
 
+// Returns null when the model's reply can't be parsed as the expected JSON.
+// Callers should leave summary/tags empty in that case rather than store
+// whatever free text came back.
 export async function generateSummaryAndTags(
   text: string,
   title: string | null,
   contentType: string
-): Promise<AISummaryResult> {
+): Promise<AISummaryResult | null> {
   const response = await client.messages.create({
     model: "claude-haiku-4-5-20251001",
     max_tokens: 300,
@@ -43,17 +46,19 @@ Respond with ONLY the JSON object, no markdown backticks, no explanation.`,
     const cleaned = responseText.replace(/```json\s*|```/g, "").trim();
     const parsed = JSON.parse(cleaned);
 
+    if (typeof parsed.summary !== "string" || !parsed.summary.trim()) {
+      console.error("[aiProcessor] Response had no summary:", responseText);
+      return null;
+    }
+
     return {
-      summary: typeof parsed.summary === "string" ? parsed.summary : "No summary available.",
+      summary: parsed.summary.trim(),
       tags: Array.isArray(parsed.tags)
         ? parsed.tags.filter((t: unknown) => typeof t === "string").slice(0, 3)
         : [],
     };
   } catch {
     console.error("[aiProcessor] Failed to parse Claude response:", responseText);
-    return {
-      summary: responseText.slice(0, 500),
-      tags: [],
-    };
+    return null;
   }
 }
