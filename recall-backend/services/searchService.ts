@@ -51,10 +51,15 @@ const baseFields = {
  * the embedding comes from: the route embeds live via OpenAI per request; the
  * benchmark's retrieval-only mode passes a precomputed embedding to isolate DB
  * + fusion latency from the external embedding call.
+ *
+ * @param query          raw search text, used by the lexical (FTS) arm
+ * @param userId         owner whose saved content is searched
+ * @param queryEmbedding embedding of `query`, or null to skip the vector arm
+ * @param timings        optional per-phase timing sink
  */
 export async function hybridSearch(
-  userId: string,
   query: string,
+  userId: string,
   queryEmbedding: number[] | null,
   timings?: HybridSearchTimings,
 ) {
