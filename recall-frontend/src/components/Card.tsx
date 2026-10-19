@@ -39,7 +39,9 @@ export interface CardProps {
   tags?: string[] | null;
   processingStatus?: string;
   onAskAI?: () => void;
-  readOnly?: boolean;
+  // "owner" shows the Ask AI and delete actions; "public" is the read-only
+  // view used on shared pages.
+  variant?: "owner" | "public";
 }
 
 function SiteLogo({ favicon, type }: { favicon?: string | null; type: ContentType }) {
@@ -63,9 +65,10 @@ function SiteLogo({ favicon, type }: { favicon?: string | null; type: ContentTyp
 
 export function Card({
   id, title, link, type, favicon, embedUrl, ogTitle, ogDescription,
-  ogImage, ogSiteName, summary, tags, processingStatus, onAskAI, readOnly,
+  ogImage, ogSiteName, summary, tags, processingStatus, onAskAI, variant = "owner",
 }: CardProps) {
   const deleteContent = useDeleteContent();
+  const isOwner = variant === "owner";
 
   useEffect(() => {
     if (type === "twitter") window.twttr?.widgets.load();
@@ -92,7 +95,7 @@ export function Card({
           >
             <ExternalLink size={14} />
           </a>
-          {!readOnly && onAskAI && (
+          {isOwner && onAskAI && (
             <button
               type="button"
               onClick={onAskAI}
@@ -102,7 +105,7 @@ export function Card({
               <SparkleIcon size="sm" />
             </button>
           )}
-          {!readOnly && (
+          {isOwner && (
             <button
               type="button"
               onClick={() => deleteContent.mutate(id)}
