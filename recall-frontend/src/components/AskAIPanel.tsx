@@ -253,37 +253,27 @@ export function AskAIPanel({ open, onClose, context, onClearContext }: AskAIPane
   );
 }
 
+const CITATION_CLASS =
+  "inline-flex items-center px-1.5 py-0.5 mx-0.5 text-xs font-medium bg-blue-500/20 text-blue-300 rounded-md hover:bg-blue-500/30 transition-colors";
+
+// Light inline formatting for answers: **bold**, `code`, and [n] citation
+// markers turned into links to the cited source.
+function formatMessage(content: string, citations: Citation[] = []): string {
+  return content
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/`([^`]+)`/g, '<code class="px-1 rounded bg-white/10 font-mono text-[0.85em]">$1</code>')
+    .replace(/\[(\d+)\]/g, (marker, n: string) => {
+      const citation = citations.find((c) => c.index === Number(n));
+      if (!citation) return marker;
+      return `<a href="${citation.link}" target="_blank" rel="noreferrer" class="${CITATION_CLASS}" title="${citation.title}">${n}</a>`;
+    });
+}
+
 function MessageContent({ content, citations }: { content: string; citations?: Citation[] }) {
-  if (!citations || citations.length === 0) {
-    return <span className="whitespace-pre-wrap">{content}</span>;
-  }
-
-  const parts = content.split(/(\[\d+\])/g);
-
   return (
-    <span className="whitespace-pre-wrap">
-      {parts.map((part, i) => {
-        const match = part.match(/^\[(\d+)\]$/);
-        if (match) {
-          const citIndex = parseInt(match[1]);
-          const citation = citations.find((c) => c.index === citIndex);
-          if (citation) {
-            return (
-              <a
-                key={i}
-                href={citation.link}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center px-1.5 py-0.5 mx-0.5 text-xs font-medium bg-blue-500/20 text-blue-300 rounded-md hover:bg-blue-500/30 transition-colors"
-                title={citation.title}
-              >
-                {citIndex}
-              </a>
-            );
-          }
-        }
-        return <span key={i}>{part}</span>;
-      })}
-    </span>
+    <span
+      className="whitespace-pre-wrap"
+      dangerouslySetInnerHTML={{ __html: formatMessage(content, citations) }}
+    />
   );
 }
