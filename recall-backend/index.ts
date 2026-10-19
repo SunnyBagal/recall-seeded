@@ -314,13 +314,20 @@ app.get("/api/v1/search", authMiddleware, async (req, res) => {
       return res.status(400).json({ message: "Query is required" });
     }
 
+    // Optional ?limit=N (1-10) so compact UIs like a quick-search dropdown
+    // can ask for fewer results. Defaults to the full result set.
+    const limit = req.query.limit === undefined ? 10 : Number(req.query.limit);
+    if (!Number.isInteger(limit) || (limit < 1 && limit > 10)) {
+      return res.status(400).json({ message: "limit must be an integer between 1 and 10" });
+    }
+
     const userId = req.userId!;
 
     // Embed the query live (OpenAI) for the end-to-end path, then run the
     // shared hybrid retrieval (pgvector + ILIKE + RRF). The exact same
     // hybridSearch() is what the benchmark's retrieval-only mode calls.
     const queryEmbedding = await generateEmbedding(query);
-    const merged = await hybridSearch(userId, query, queryEmbedding);
+    const merged = (await hybridSearch(userId, query, queryEmbedding)).slice(0, limit);
 
     res.json({ results: merged, total: merged.length });
   } catch (err) {
