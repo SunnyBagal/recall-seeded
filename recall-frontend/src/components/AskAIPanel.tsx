@@ -132,8 +132,8 @@ export function AskAIPanel({ open, onClose, context, onClearContext }: AskAIPane
           try {
             const event = JSON.parse(dataLine);
 
-            if (event.type === "citations") {
-              citations = event.citations;
+            if (event.type === "sources") {
+              citations = event.sources;
             } else if (event.type === "text") {
               assistantText += event.text;
               setMessages((prev) => {

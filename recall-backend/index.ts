@@ -440,7 +440,8 @@ app.post("/api/v1/chat", authMiddleware, async (req, res) => {
       link: c.link,
       type: c.type,
     }));
-    res.write(`data: ${JSON.stringify({ type: "citations", citations })}\n\n`);
+    // Sent once, before any text, so the client can link [n] markers as they stream in.
+    res.write(`data: ${JSON.stringify({ type: "sources", sources: citations })}\n\n`);
 
     const stream = anthropic.messages.stream({
       model: "claude-sonnet-4-6",
