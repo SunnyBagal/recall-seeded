@@ -1,5 +1,9 @@
 import { create } from "zustand";
- 
+
+// Namespaced so the session doesn't collide with other apps served from the
+// same origin during local development (several Vite apps share :5173).
+export const TOKEN_STORAGE_KEY = "recall:token";
+
 interface AuthState {
   token: string | null;
   isAuthenticated: boolean;
@@ -10,16 +14,16 @@ interface AuthState {
 }
  
 export const useAuthStore = create<AuthState>((set) => ({
-  token: localStorage.getItem("token"),
-  isAuthenticated: !!localStorage.getItem("token"),
+  token: localStorage.getItem(TOKEN_STORAGE_KEY),
+  isAuthenticated: !!localStorage.getItem(TOKEN_STORAGE_KEY),
  
   setToken: (token: string) => {
-    localStorage.setItem("token", token);
+    localStorage.setItem(TOKEN_STORAGE_KEY, token);
     set({ token, isAuthenticated: true });
   },
  
   logout: () => {
-    localStorage.removeItem("token");
+    localStorage.removeItem(TOKEN_STORAGE_KEY);
     set({ token: null, isAuthenticated: false });
   },
 }));
