@@ -329,6 +329,19 @@ app.get("/api/v1/search", authMiddleware, async (req, res) => {
   }
 });
 
+// Columns the chat prompt is built from (see contextBlock and citations
+// below). Shared by the similarity lookup and the recent-items fallback.
+const chatContextFields = {
+  id: contents.id,
+  title: contents.title,
+  link: contents.link,
+  type: contents.type,
+  summary: contents.summary,
+  extractedText: contents.extractedText,
+  ogTitle: contents.ogTitle,
+  ogDescription: contents.ogDescription,
+};
+
 app.post("/api/v1/chat", authMiddleware, async (req, res) => {
   try {
     const { message, history, cardId } = req.body;
@@ -362,16 +375,7 @@ app.post("/api/v1/chat", authMiddleware, async (req, res) => {
       const similarity = sql<number>`1 - (${cosineDistance(contents.embedding, queryEmbedding)})`;
 
       const vectorResults = await db
-        .select({
-          id: contents.id,
-          title: contents.title,
-          link: contents.link,
-          type: contents.type,
-          summary: contents.summary,
-          extractedText: contents.extractedText,
-          ogTitle: contents.ogTitle,
-          ogDescription: contents.ogDescription,
-        })
+        .select(chatContextFields)
         .from(contents)
         .where(and(eq(contents.userId, userId), gt(similarity, 0.25)))
         .orderBy(desc(similarity))
@@ -390,16 +394,7 @@ app.post("/api/v1/chat", authMiddleware, async (req, res) => {
     
     if (relevantContent.length === 0) {
       relevantContent = await db
-        .select({
-          id: contents.id,
-          title: contents.title,
-          link: contents.link,
-          type: contents.type,
-          summary: contents.summary,
-          extractedText: contents.extractedText,
-          ogTitle: contents.ogTitle,
-          ogDescription: contents.ogDescription,
-        })
+        .select(chatContextFields)
         .from(contents)
         .where(eq(contents.userId, userId))
         .orderBy(desc(contents.createdAt))
