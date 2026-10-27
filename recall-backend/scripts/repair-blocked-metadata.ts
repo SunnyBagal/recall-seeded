@@ -93,7 +93,8 @@ async function main() {
   for (const r of rows) {
     try {
       const detection = detectLinkType(r.link);
-      const meta = await fetchMetadata(r.link, detection.type);
+      // Slow sites are a common reason rows ended up blocked; give them longer.
+      const meta = await fetchMetadata(r.link, detection.type, 20_000);
 
       if (meta.blocked) {
         // Still unreachable. Replace the wall's content with the URL-derived

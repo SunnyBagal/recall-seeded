@@ -135,9 +135,14 @@ function extractFavicon(document: Doc, baseUrl: string): string | null {
 
 }
 
+// Per-attempt budget for reading a page. Request handlers keep the default
+// so saving a link stays snappy; offline repair jobs can afford longer.
+const DEFAULT_TIMEOUT_MS = 8000;
+
 export async function fetchMetadata(
   url: string,
-  type: DetectedType
+  type: DetectedType,
+  timeoutMs: number = DEFAULT_TIMEOUT_MS
 ) : Promise<MetadataResult> {
 
   const fallback = fallbackFromUrl(url);
@@ -162,7 +167,7 @@ export async function fetchMetadata(
 
     for (const profile of UA_PROFILES) {
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 8000);
+      const timeout = setTimeout(() => controller.abort(), timeoutMs);
       try {
         // Redirects are followed by hand so every hop goes through the same
         // address check as the original URL.
