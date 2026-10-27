@@ -34,6 +34,14 @@ export function InputBar() {
     setValue("");
   }
 
+  // Escape clears the box, and the active search if there is one.
+  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key !== "Escape") return;
+    if (!value && !searchQuery) return;
+    e.preventDefault();
+    handleClearSearch();
+  }
+
   return (
     <form className="flex items-center gap-2 w-full min-w-0" onSubmit={handleSubmit}>
       <div className="flex-1 min-w-0 relative">
@@ -41,6 +49,7 @@ export function InputBar() {
           type="text"
           value={value}
           onChange={(e) => setValue(e.target.value)}
+          onKeyDown={handleKeyDown}
           placeholder="Paste a link or search your Recall..."
           className="w-full h-10 border border-white rounded-lg bg-transparent text-white placeholder:text-gray-500 px-4 pr-10 outline-none focus:ring-2 focus:ring-white/30 transition-shadow"
           disabled={createContent.isPending}
