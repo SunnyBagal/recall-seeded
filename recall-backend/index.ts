@@ -20,6 +20,7 @@ import Anthropic from "@anthropic-ai/sdk";
 const anthropic = new Anthropic();
 
 const JWT_SECRET = process.env.JWT_SECRET!;
+const MAX_SEARCH_QUERY_LENGTH = 500;
 const app = express();
 app.use(express.json());
 
@@ -307,11 +308,16 @@ app.get("/api/v1/brain/:shareLink", async (req, res) => {
   });
 });
 
-app.get("/api/v1/search", authMiddleware, async (req, res) => {
+// Search only ever returns the caller's own saved content, so it lives
+// under the content resource.
+app.get("/api/v1/content/search", authMiddleware, async (req, res) => {
   try {
     const query = (req.query.q as string)?.trim();
     if (!query) {
       return res.status(400).json({ message: "Query is required" });
+    }
+    if (query.length > MAX_SEARCH_QUERY_LENGTH) {
+      return res.status(400).json({ message: "Query is too long" });
     }
 
     const userId = req.userId!;
